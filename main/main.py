@@ -27,8 +27,10 @@ def getData():
                     if personId == row[personIdRow]:
                         age = row[ageRow]
                         gender = row[genderRow]
-                        adjCount = featureManager.ponctuationNumber(fileManager.getText(folder + filename, encoding="iso8859"))
-                        struct = FileDataStruct.FileDataStruct("", age, gender,adjCount)
+                        text = fileManager.getText(folder + filename, encoding="iso8859")
+                        grams = featureManager.grams(text)
+                        #postag = featureManager.posTagCount(text)
+                        struct = FileDataStruct.FileDataStruct("", age, gender,"",grams)
                         data[int(personId)] = struct
                     i = i + 1
     return data
