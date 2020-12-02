@@ -16,36 +16,36 @@ csvReviewFolder = "/Volumes/HD 2/Mestrado/Aulas Mineração/Base de dados/b2w-
 def getData():
     with open(csvFolder, 'r',encoding="iso8859") as file:
         csvFile = list(csv.reader(file,delimiter=";"))
+        print("CSV Total: %s" % len(csvFile))
         row_count = sum(1 for row in csvFile)
         data = {}
+        errors = 0
         for filename in os.listdir(folder):
-            if filename.endswith(".txt"):
-                personId = re.findall(numberRegex, filename)[0]
-                idade = 0
-                gender = ""
-                i = 0
-                while i < row_count:
-                    row = csvFile[i]
-                    if personId == row[personIdRow]:
-                        if (row[ageRow] != ""):
-                            a = int(row[ageRow])
-                            if a >= 10 and a <= 20:
-                                idade = 0
-                            elif a > 20 and a <= 30:
-                                idade = 1
-                            elif a > 30 and a <= 40:
-                                idade = 2
-                            if row[genderRow] == "male":
-                                gender = 0
-                            else:
-                                gender = 1
-                            text = fileManager.getText(folder + filename, encoding="iso8859")
-                            grams = featureManager.grams(text)
-                            #postag = featureManager.posTagCount(text)
-                            struct = FileDataStruct.FileDataStruct("", idade, gender,"",grams)
-                            data[int(personId)] = struct
-                    i = i + 1
-    return data
+            personId = re.findall(numberRegex, filename)[0]
+            idade = 0
+            gender = ""
+            i = 0
+            result = list(filter(lambda x: x[0] == personId, csvFile))
+            try:
+                a = int(result[0][ageRow])
+                if a >= 10 and a < 20:
+                    idade = 0
+                elif a >= 20 and a < 30:
+                    idade = 1
+                elif a >= 30 and a <= 61:
+                    idade = 2
+                if result[0][genderRow] == "male":
+                    gender = 0
+                else:
+                    gender = 1
+                text = fileManager.getText(folder + filename, encoding="iso8859")
+                struct = getFileStruct(idade, gender, text,id=personId)
+                data[int(personId)] = struct
+            except ValueError:
+                errors = errors + 1
+                #print("Errors %s" %errors)
+                pass
+        return data
 
 def getReviewData():
     with open(csvReviewFolder, 'r',encoding="utf-8") as file:
@@ -62,20 +62,28 @@ def getReviewData():
             if Pass > 1:
                 a = int(date.today().year - int(values[11]))
                 if a <= 60 and a >= 10:
-                    if a >= 20 and a <= 30:
+                    if a >= 15 and a <= 30:
                         idade = 0
-                    elif a > 30 and a <= 40:
+                    elif a > 30 and a <= 45:
                         idade = 1
-                    elif a > 40:
+                    elif a > 45:
                         idade = 2
                     if values[12] == "M":
                         gender = 0
                     else:
                         gender = 1
                     text = values[10]
-                    grams = featureManager.grams(text)
-                    # postag = featureManager.posTagCount(text)
-                    struct = FileDataStruct.FileDataStruct("", idade, gender, "", grams)
-                    data[i] = struct
+                    data[i] = getFileStruct(idade,gender,text,id=values[1])
                     i = i + 1
     return data
+
+def getFileStruct(idade,gender,text,id):
+    #grams = featureManager.grams(text,3)
+    predictGender = featureManager.getGender(text,gender,id)
+    #grams2 = featureManager.grams(text,2)
+    #postag = featureManager.posTagCount(text)
+    #blankSpaces = featureManager.getBlankSpaces(text)
+    #capitalizedCount = featureManager.getCapitalizedCount(text)
+    #ponctCount = featureManager.getPontcCount(text)
+    #words = featureManager.getWords(text)
+    return FileDataStruct.FileDataStruct(text, idade, gender, predictedGender=predictGender)
