@@ -46,7 +46,7 @@ wrongsFeminino = 0
 originalDF = pd.DataFrame (data, columns = ['idade','gender','predictedGender'])
 
 for index, row in originalDF.iterrows():
-    if row.gender:
+    if row.gender is not None:
         if row.gender == 0:
             if row.predictedGender == "Fem":
                 wrongsMasculino += 1

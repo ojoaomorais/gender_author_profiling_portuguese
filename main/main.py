@@ -13,6 +13,7 @@ numberRegex = r'\d+'
 folder = "/Volumes/HD 2/Mestrado/Aulas Mineração/Base de dados/b5-corpus v.1.7/post/normalised/"
 csvFolder = "/Volumes/HD 2/Mestrado/Aulas Mineração/Base de dados/b5-corpus v.1.7/subjects table/subject(PT).csv"
 csvReviewFolder = "/Volumes/HD 2/Mestrado/Aulas Mineração/Base de dados/b2w-reviews01-master/B2W-Reviews01.csv"
+csvStilingueFolder = "/Volumes/HD 2/Mestrado/Aulas Mineração/Base de dados/RelatorioDePublicacoes-_16_Nov_2020a17_Nov_2020.csv"
 def getData():
     with open(csvFolder, 'r',encoding="iso8859") as file:
         csvFile = list(csv.reader(file,delimiter=";"))
@@ -74,6 +75,34 @@ def getReviewData():
                         gender = 1
                     text = values[10]
                     data[i] = getFileStruct(idade,gender,text,id=values[1])
+                    i = i + 1
+    return data
+
+def getStilingueData():
+    with open(csvStilingueFolder, 'r',encoding="utf-8") as file:
+        csvFile = list(csv.reader(file,delimiter=","))
+        row_count = sum(1 for row in csvFile)
+        data = {}
+        Pass = 0
+        i = 0
+        idade = 0
+        for values in csvFile:
+            Pass += 1
+            if Pass > 1:
+                #a = int(date.today().year - int(values[11]))
+                #if a <= 60 and a >= 10:
+                    #if a >= 15 and a <= 30:
+                        #idade = 0
+                    #elif a > 30 and a <= 45:
+                        #idade = 1
+                    #elif a > 45:
+                        #idade = 2
+                    if values[14] == "Homem":
+                        gender = 0
+                    else:
+                        gender = 1
+                    text = values[11]
+                    data[i] = getFileStruct(0,gender,text,id=values[12])
                     i = i + 1
     return data
 

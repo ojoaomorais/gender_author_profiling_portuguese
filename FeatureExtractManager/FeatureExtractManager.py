@@ -41,8 +41,10 @@ import spacy
 from spacy import displacy
 from spacy.lang.pt import Portuguese # updated
 from spacy import displacy
-linkingVerbs = ["ser","estar","permanecer","ficar","parecer"]
 adjetivosUniformes = ['e', 'l', 'm', 'r', 's','z']
+linkingVerbs = ["ser","estar","permanecer","ficar","parecer","andar","viver","virar","continuar"]
+adjBifFormaNormal1 = ["o","u","ês","or","ão","éu","eu"]
+adjBifFormaFem = ["a","ã","ona","oa","eia"]
 def getGender(text,realGender,textId):
     cleanedText = re.sub("\$.*?\$", '', text)
 
@@ -52,7 +54,7 @@ def getGender(text,realGender,textId):
     femCount = 0
     maleCount = 0
     doc = nlp(cleanedText)
-    sub_toks = [tok for tok in doc if ("Person=1" in tok.tag_)]
+    sub_toks = [tok for tok in doc if ("Number=Sing|Person=1" in tok.tag_)]
     if len(sub_toks) > 0:
         print("=======================================")
         print("ID DO TEXTO:")
@@ -61,29 +63,25 @@ def getGender(text,realGender,textId):
             if token.lemma_ in linkingVerbs:
                 print("Palavra a ser analisada")
                 print(token.text, token.lemma_, token.pos_, token.tag_, token.dep_)
-                gender = genero(token.head,adj=True,verb=True)
+                gender = genero(token.head,adj=True,verb=True,realGender=realGender)
                 if gender:
                     if gender == "Masc":
                         maleCount += 1
                     elif gender == "Fem":
                         femCount += 1
                 for child in token.children:
-                    gender = genero(child,adj=True,verb=True)
+                    gender = genero(child,adj=False,verb=True,realGender=realGender)
                     if gender:
                         if gender == "Masc":
                             maleCount += 1
                         elif gender == "Fem":
                             femCount += 1
-        if maleCount == 0 and femCount == 0:
+        if maleCount == 0 and femCount == 0 or maleCount == femCount:
             return
         if maleCount > femCount:
-            print("Genero real: ", realGender)
-            print("Genero Predito: Masculino")
             print("=======================================")
             return "Masc"
         else:
-            print("Genero real: ", realGender)
-            print("Genero Predito: Feminino")
             print("=======================================")
             return "Fem"
         #print(token.text, token.lemma_, token.pos_, token.tag_, token.dep_,token.shape_, token.head.text,[child for child in token.children])
@@ -92,36 +90,51 @@ def getGender(text,realGender,textId):
         #    print(token.text, token.pos_, token.tag_)
     return
 
-def genero(pos,adj,verb):
-    print("Palavra ligada a ser analisada: ")
-    print(pos.text, pos.lemma_, pos.pos_, pos.tag_, pos.dep_)
+def genero(pos,adj,verb,realGender):
     if adj:
         search = re.search('ADJ__Gender=(.+?)\|Number=Sing', pos.tag_)
         if search:
             if pos.text[-1:] in adjetivosUniformes:
                 return
-            print(pos.text, pos.lemma_, pos.pos_, pos.tag_, pos.dep_)
+            #print(pos.text, pos.lemma_, pos.pos_, pos.tag_, pos.dep_)
             if search.group(1) == "Fem":
-                print("Gênero Feminino")
-                return "Fem"
+                #VERIFICACAO EM DUAS ETAPAS
+                for adjBifFem in adjBifFormaFem:
+                    if pos.text[-len(adjBifFem):] in adjBifFormaFem:
+                        #print("Gênero Feminino")
+                        if realGender == 0:
+                            print("Predição errada")
+                            print(pos.text, pos.lemma_, pos.pos_, pos.tag_, pos.dep_)
+                        return "Fem"
+                return
             elif search.group(1) == "Masc":
-                print("Gênero Masculino")
-                return "Masc"
+                # VERIFICACAO EM DUAS ETAPAS
+                for adjBifMasc in adjBifFormaNormal1:
+                    if pos.text[-len(adjBifMasc):] in adjBifFormaNormal1:
+                        if realGender == 1:
+                            print("Predição errada")
+                            print(pos.text, pos.lemma_, pos.pos_, pos.tag_, pos.dep_)
+                        return "Masc"
+                return
             else:
-                print("Gênero nao especificado")
+                #print("Gênero nao especificado")
                 return
     if verb:
         search = re.search('VERB__Gender=(.+?)\|Number=Sing\|VerbForm=Part\|Voice=Pass', pos.tag_)
         if search:
-            print(pos.text, pos.lemma_, pos.pos_, pos.tag_, pos.dep_)
+            #print(pos.text, pos.lemma_, pos.pos_, pos.tag_, pos.dep_)
             if search.group(1) == "Fem":
-                print("Gênero Feminino")
+                if realGender == 0:
+                    print("Predição errada")
+                    print(pos.text, pos.lemma_, pos.pos_, pos.tag_, pos.dep_)
                 return "Fem"
             elif search.group(1) == "Masc":
-                print("Gênero Masculino")
+                if realGender == 1:
+                    print("Predição errada")
+                    print(pos.text, pos.lemma_, pos.pos_, pos.tag_, pos.dep_)
                 return "Masc"
             else:
-                print("Gênero nao especificado")
+                #print("Gênero nao especificado")
                 return
 
 from nltk.corpus import stopwords
