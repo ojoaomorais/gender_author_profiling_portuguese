@@ -94,7 +94,7 @@ def getGenderStanza(text,realGender):
                                                         elif gend == "Fem":
                                                             femCount += 1
     if maleCount == 0 and femCount == 0 or maleCount == femCount:
-        return
+        return None
     treshold = 0.75
     if maleCount > femCount:
         if (maleCount/(maleCount + femCount)) > treshold:

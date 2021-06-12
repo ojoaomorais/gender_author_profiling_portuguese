@@ -105,6 +105,8 @@ def b5CorpusPrediction(predictAttribute,dataFrame,genderHeuristica):
 
 def panCorpusPrediction(dataFrame,idadeHeuristica):
     print("Quantidade de amostras: %s",len(dataFrame.text))
+    print(data.head())
+    quit()
     char_tfidf = TfidfVectorizer(analyzer='char', ngram_range=(3, 5),sublinear_tf=True,min_df=2,use_idf=False)
     word_tfidf = TfidfVectorizer(analyzer='word', ngram_range=(1, 2),sublinear_tf=True,min_df=2,use_idf=False)
     tfidf = FeatureUnion([('char', char_tfidf), ('word', word_tfidf)])
@@ -265,27 +267,17 @@ def kFoldClassification(df,foldNumber,classificator,X,y,genderHeuristica):
     i = 1
     for train_index, test_index in kf.split(X, y):
         print('{} of KFold {}'.format(i, kf.n_splits))
+        dfTrain = df.loc[train_index]
+        dfTrain = dfTrain[dfTrain[['gender', 'predictedGender']].apply(tuple, axis=1).isin([(1, 0), (0, 1)])]
         dfTest = df.loc[test_index]
         xtr, xvl = X[train_index], X[test_index]
         ytr, yvl = y[train_index], y[test_index]
-        # if (genderHeuristica):
-        #     for index, row in dfTrain.iterrows():
-        #         ind = dfTrain[dfTrain.text == row.text].index[0]
-        #         y1 = row.gender
-        #         if (math.isnan(row.predictedGender) == False) and (row.predictedGender != y1):
-        #             print("================ ROW ===================")
-        #             print(row)
-        #             print("=================YTR====================")
-        #             print(ytr[ind])
-        #             print("=================INDEX==================")
-        #             print(ind)
-        #             print("================XTR=====================")
-        #             print(xtr)
-        #             xtr = xtr.drop(ind)
-        #             ytr = ytr.drop(ind)
+        if (genderHeuristica):
+             for index, row in dfTrain.iterrows():
+                xtr = xtr.drop(index)
+                ytr = ytr.drop(index)
         classificator.fit(xtr, ytr)
         predicts = classificator.predict(xvl)
-        k = 0
         precision, recall, fscore, support = score(yvl, predicts)
         totalPrecision.append(precision)
         totalF1.append(fscore)

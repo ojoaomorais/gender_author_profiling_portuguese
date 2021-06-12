@@ -39,7 +39,8 @@ def getData():
         idade0 = 0
         idade1 = 0
         idade2 = 0
-        for filename in os.listdir(folder):
+        print("Lendo arquivos...")
+        for filename in tqdm(os.listdir(folder)):
             personId = re.findall(numberRegex, filename)[0]
             idade = None
             gender = ""
@@ -86,7 +87,8 @@ def getReviewData():
         idade2 = 0
         maleGender = 0
         femaleGender = 0
-        for values in csvFile:
+        print("Lendo arquivos...")
+        for values in tqdm(csvFile):
             idade = None
             if values[12] == "null" or values[11] == "null" or values[10] == "null":
                 continue
@@ -125,7 +127,8 @@ def getStilingueData():
         Pass = 0
         i = 0
         idade = 0
-        for values in csvFile:
+        print("Lendo arquivos...")
+        for values in tqdm(csvFile):
             Pass += 1
             if Pass > 1:
                 #a = int(date.today().year - int(values[11]))
@@ -156,7 +159,8 @@ def getPan(path,onlyBrazil):
     data = {}
     maleCount = 0
     femaleCount = 0
-    for folder in os.listdir(path):
+    print("Lendo arquivos...")
+    for folder in tqdm(os.listdir(path)):
         if not folder.endswith(".DS_Store") and (folder == "pt"):
             folderFiles = path + "/" + folder
             truth = folderFiles + "/truth.txt"
@@ -216,6 +220,7 @@ def generateBlogsetCSV():
             maleCount = 0
             femaleCount = 0
             gender = None
+            print("Lendo arquivos...")
             for values in tqdm(answerCSV):
                 model = [x for i, x in enumerate(textsCSV) if x and values[1] == x[5]]
                 if model:
@@ -248,6 +253,7 @@ def getBlogsetData():
         qtde = 0
         maleCount = 0
         femaleCount = 0
+        print("Lendo arquivos...")
         for values in tqdm(dataCsvFile):
             Pass += 1
             if Pass > 1:
@@ -266,7 +272,7 @@ def getBlogsetData():
     return data
 
 def getFileStruct(idade,gender,text,id):
-    #predictGender = featureManager.getGender(text,gender,id)
+    predictGender = featureManager.getGenderStanza(text,gender)
     #emojiFrequency = featureManager.getEmojiFrequency(text)
     #laughFrequency = featureManager.getLaughFrequency(text)
     #slangFrequency = featureManager.getSlangFrequency(text)
@@ -274,7 +280,7 @@ def getFileStruct(idade,gender,text,id):
     return FileDataStruct.FileDataStruct(text=text,
                                          idade= idade,
                                          gender= gender,
-                                         predictedGender=0,
+                                         predictedGender=predictGender,
                                          slangFrequency=0,
                                          laughFrequency=0,
                                          emojiFrequency=0
@@ -289,7 +295,8 @@ def getESic():
         i = 0
         maleGender = 0
         femaleGender = 0
-        for values in csvFile:
+        print("Lendo arquivos...")
+        for values in tqdm(csvFile):
             idade = None
             if values[1] == "null" or values[4] == "null" :
                 continue
@@ -321,7 +328,8 @@ def getBrMoral():
         i = 0
         maleGender = 0
         femaleGender = 0
-        for values in csvFile:
+        print("Lendo arquivos...")
+        for values in tqdm(csvFile):
             text = ""
             idade = None
             if values[12] == "null" or values[12] is None :
