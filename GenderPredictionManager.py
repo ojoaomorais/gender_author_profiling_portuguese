@@ -9,6 +9,8 @@ from sklearn.model_selection import StratifiedKFold, train_test_split
 from sklearn.neural_network import MLPClassifier
 from sklearn.pipeline import FeatureUnion
 from sklearn.svm import LinearSVC
+from sklearn.pipeline import Pipeline
+from sklearn.model_selection import GridSearchCV
 from tqdm import tqdm
 
 import FeatureExtractManager as featureManager
@@ -16,11 +18,13 @@ import pandas as pd
 from sklearn.metrics import precision_recall_fscore_support as score, f1_score
 import numpy as np
 import nltk
+import math
 from apyori import apriori
 nltk.download('stopwords')
 from progress.bar import Bar
 from gensim.models import Doc2Vec, Word2Vec
 import gensim.downloader as api
+import os
 
 def printPredictedGenderScores(dataFrame):
     corretsMasculino = 0
@@ -85,53 +89,31 @@ def getAssociationRules(dataframe):
             print("Rule: " + items[0])
         print("=====================================")
 
-def b5CorpusPrediction(predictAttribute,dataFrame,genderHeuristica):
+def b5CorpusPrediction(dataFrame,heuristicaTrain,heuristicaTest):
     print("Quantidade de amostras: %s", len(dataFrame.text))
     logistic = LogisticRegression(C=25.0,random_state=1)
-    final_stopwords_list = stopwords.words('portuguese')
-    tfidf = TfidfVectorizer(max_features=3000,stop_words=final_stopwords_list)
+    tfidf = TfidfVectorizer(max_features=3000)
     d = tfidf.fit_transform(dataFrame.text)
+    # pipeline = Pipeline([('tfidf', tfidf), ('clf', logistic)])
+    # parameters = [{
+    #     "clf__C":[1.0,5.0,10.0,15.0,20.0,25.0,30.0]
+    # }]
+    # grid_search = GridSearchCV(pipeline, parameters, scoring="f1", cv=10, n_jobs=-1)
+    # grid_search.fit(dataFrame.text, dataFrame.gender)
+    # print("Best params:")
+    # print(grid_search.best_params_)
+    # print("Best parameter (CV score=%0.3f):" % grid_search.best_score_)
 
-    #pipeline = Pipeline([('tfidf', tfidf), ('clf', clf)])
-    #parameters = [{
-    #    "clf__C":[5.0]
-    #}]
-    #grid_search = GridSearchCV(pipeline, parameters, scoring="f1", cv=10, verbose=10, n_jobs=-1)
-    #grid_search.fit(dataFrame.text, dataFrame.gender)
-    #print("Best params:")
-    #print(grid_search.best_params_)
-    #print("Best parameter (CV score=%0.3f):" % grid_search.best_score_)
-    kFoldClassification(dataFrame,10, logistic,X=d,y=dataFrame.gender,genderHeuristica=genderHeuristica)
+    kFoldClassification(dataFrame,10, logistic,X=d,y=dataFrame.gender,genderHeuristicaTrain=heuristicaTrain,genderHeuristicaTest=heuristicaTest)
 
-def panCorpusPrediction(dataFrame,idadeHeuristica):
+def panCorpusPrediction(dataFrame,heuristicaTrain,heuristicaTest):
     print("Quantidade de amostras: %s",len(dataFrame.text))
-    print(data.head())
-    quit()
     char_tfidf = TfidfVectorizer(analyzer='char', ngram_range=(3, 5),sublinear_tf=True,min_df=2,use_idf=False)
     word_tfidf = TfidfVectorizer(analyzer='word', ngram_range=(1, 2),sublinear_tf=True,min_df=2,use_idf=False)
     tfidf = FeatureUnion([('char', char_tfidf), ('word', word_tfidf)])
     d = tfidf.fit_transform(dataFrame.text)
-
-    #pipeline = Pipeline([('tfidf', tfidf), ('clf', LinearSVC(C=0.5))])
-    #grid_search = GridSearchCV(pipeline,parameters,scoring="accuracy",cv=5,verbose=10,n_jobs=-1)
-    #grid_search.fit(dataFrame.text,dataFrame.gender)
-    #print("Best params:")
-    #print(grid_search.best_params_)
-    #print("Best parameter (CV score=%0.3f):" % grid_search.best_score_)
-    predictedGender = []
-    # if (idadeHeuristica):
-    #     print("Rodando heurística...")
-    #     for index, row in tqdm(dataFrame.iterrows()):
-    #         y1 = row.gender
-    #         gender = featureManager.getGenderStanza(row.text, y1)
-    #         if gender is None:
-    #             predictedGender.append(None)
-    #         else:
-    #             predictedGender.append(gender)
     svc = LinearSVC(C=0.5)
-    #if (idadeHeuristica):
-    #    data["predictedGender"] = predictedGender
-    kFoldClassification(dataFrame,5,svc,X=d,y=dataFrame.gender,genderHeuristica=idadeHeuristica)
+    kFoldClassification(dataFrame,5,svc,X=d,y=dataFrame.gender,genderHeuristicaTrain=heuristicaTrain,genderHeuristicaTest=heuristicaTest)
 
 from gensim.models import KeyedVectors
 preprocess = False
@@ -154,7 +136,7 @@ class TfidfEmbeddingVectorizer(TransformerMixin):
     def transform(self, X, **fit_params):
         out_m = []
         i = 0
-        for text in tqdm(X):
+        for text in X:
             i = i + 1
             parag_M = []
             #Com Word Embeddings do Google
@@ -211,53 +193,70 @@ def crossDomainPrediction(dataFrame,w,s,x,filter,it,layers,f,alpha,corpusName,co
                 model.save('word2vecOpinion.kv')
             model = Word2Vec.load('word2vecOpinion.kv').wv
         mlp = MLPClassifier(solver="lbfgs", hidden_layer_sizes=layers, random_state=1, max_iter=it, activation=f,alpha=alpha)
-        for i in range(150):
-            if Path(xtrainName).is_file() and Path(xtestName).is_file() and Path(ytrainName).is_file() and Path(ytestName).is_file() :
+        if Path(xtrainName).is_file() and Path(xtestName).is_file() and Path(ytrainName).is_file() and Path(ytestName).is_file() :
                 np.random.seed(1)
                 print("Existe")
-                X_train = pd.read_csv(xtrainName, header=None, squeeze=True)
-                X_test = pd.read_csv(xtestName,header=None, squeeze=True)
-                y_train = pd.read_csv(ytrainName,header=None, squeeze=True)
-                y_test = pd.read_csv(ytestName,header=None, squeeze=True)
+                X_train = pd.read_csv(xtrainName, header=None, squeeze=True,index_col=0)
+                X_test = pd.read_csv(xtestName,header=None, squeeze=True,index_col=0)
+                y_train = pd.read_csv(ytrainName,header=None, squeeze=True,index_col=0)
+                y_test = pd.read_csv(ytestName,header=None, squeeze=True,index_col=0)
+                X_train = X_train.iloc[1:]
+                X_test = X_test.iloc[1:]
+                y_train = y_train.iloc[1:]
+                y_test = y_test.iloc[1:]
+        else:
+            X_train, X_test, y_train, y_test = train_test_split(dataFrame.text, dataFrame.gender, test_size=0.2, stratify=dataFrame.gender)
+        tfidfVec = TfidfEmbeddingVectorizer(model=model,w=w)
+        X_train = X_train.fillna(' ')
+        X_test = X_test.fillna(' ')
+        X_train_vec = tfidfVec.fit_transform(X_train)
+        mlp.fit(X_train_vec,y_train)
+        X_test_vec = tfidfVec.transform(X_test)
+        predict =  mlp.predict(X_test_vec)
+        f1 = f1_score(y_test, predict, average='micro')
+        print("#### PRE HEURISTICA ####")
+        print('fscore:    {}'.format(f1))
+        print("########################")
 
-            else:
-                X_train, X_test, y_train, y_test = train_test_split(dataFrame.text, dataFrame.gender, test_size=0.2, stratify=dataFrame.gender)
-            trainDF = pd.DataFrame({'text': X_train,'gender':y_train})
-            testDF = pd.DataFrame({"text": X_test,"gender": y_test})
-            trainDF = trainDF.fillna(' ')
-            testDF = testDF.fillna(' ')
-            tfidfVec = TfidfEmbeddingVectorizer(model=model,w=w)
-            X_train_vec = tfidfVec.fit_transform(trainDF.text)
-            mlp.fit(X_train_vec,trainDF.gender)
-
-            X_test_vec = tfidfVec.transform(testDF.text)
-            predict =  mlp.predict(X_test_vec)
-            f1 = f1_score(testDF.gender, predict, average='micro')
-            print("#### PRE HEURISTICA ####")
+        #if (Path(xtrainName).is_file() == False) and (Path(xtestName).is_file() == False) and (Path(ytrainName).is_file() == False) and (Path(ytestName).is_file() == False):
+        #    floatF1 = float("{:.3f}".format(f1))
+        #    print("Salvando novos arquivos...")
+        #    print("Resultado F1:")
+        #    print(floatF1)
+        #    print("Threshold desejado para teste pré heurística:")
+        #    print(corpusThreshold)
+        #    if(floatF1 == corpusThreshold):
+        #        print("Resultado atingido")
+        #        X_train.to_csv(xtrainName, index=True)
+        #        y_train.to_csv(ytrainName,index=True)
+        #        X_test.to_csv(xtestName, index=True)
+        #        y_test.to_csv(ytestName, index=True)
+        if genderHeuristica:
+            k = 0
+            for index, row in X_test.iteritems():
+                ind = int(index)
+                gender = dataFrame.iloc[ind].predictedGender
+                if not math.isnan(gender):
+                    predict[k] = gender
+                k = k + 1
+            f1 = f1_score(y_test, predict, average='micro')
+            #floatF2 = float("{:.3f}".format(f1))
+            #print("O float é:")
+            #print(floatF2)
+                    #Mockado para resultado do E-Gov
+                    #if(floatF2 != 0.806):
+                    #    print("Resultado errado, removendo arquivos...")
+                    #    os.remove(xtrainName)
+                    #    os.remove(ytrainName)
+                    #    os.remove(xtestName)
+                    #    os.remove(ytestName)
+                    #else:
+            print("#### PÓS HEURISTICA ####")
             print('fscore:    {}'.format(f1))
             print("########################")
 
-            if (Path(xtrainName).is_file() == False) and (Path(xtestName).is_file() == False) and (Path(ytrainName).is_file() == False) and (Path(ytestName).is_file() == False):
-                if(f1 >= corpusThreshold):
-                    print("Resultado atingido")
-                    trainDF.text.to_csv(xtrainName, index=False)
-                    trainDF.gender.to_csv(ytrainName,index=False)
-                    testDF.text.to_csv(xtestName, index=False)
-                    testDF.gender.to_csv(ytestName, index=False)
-                    k = 0
-                    for text in testDF.text:
-                         gender = featureManager.getGenderStanza(text,realGender=0)
-                         if (gender is not None):
-                             predict[k] = gender
-                         k = k + 1
-                    f1 = f1_score(y_test, predict, average='micro')
-                    print("#### PÓS HEURISTICA ####")
-                    print('fscore:    {}'.format(f1))
-                    print("########################")
-                    break
 
-
-def kFoldClassification(df,foldNumber,classificator,X,y,genderHeuristica):
+def kFoldClassification(df,foldNumber,classificator,X,y,genderHeuristicaTrain,genderHeuristicaTest):
 
     kf = StratifiedKFold(n_splits=foldNumber, shuffle=True, random_state=1)
     totalPrecision = []
@@ -267,15 +266,25 @@ def kFoldClassification(df,foldNumber,classificator,X,y,genderHeuristica):
     i = 1
     for train_index, test_index in kf.split(X, y):
         print('{} of KFold {}'.format(i, kf.n_splits))
-        dfTrain = df.loc[train_index]
-        dfTrain = dfTrain[dfTrain[['gender', 'predictedGender']].apply(tuple, axis=1).isin([(1, 0), (0, 1)])]
+        indexToRemove = []
+        if(genderHeuristicaTrain):
+            indexToRemove = df[df[['gender', 'predictedGender']].apply(tuple, axis=1).isin([(1, 0), (0, 1)])].index.tolist()
+            if (len(indexToRemove) > 0):
+                old_train = train_index
+                train_index = []
+                for ind in old_train:
+                    if ind not in indexToRemove:
+                        train_index.append(ind)
+
         dfTest = df.loc[test_index]
         xtr, xvl = X[train_index], X[test_index]
         ytr, yvl = y[train_index], y[test_index]
-        if (genderHeuristica):
-             for index, row in dfTrain.iterrows():
-                xtr = xtr.drop(index)
-                ytr = ytr.drop(index)
+        a = 0
+        if (genderHeuristicaTrain):
+            dfRemoved = df.loc[indexToRemove]
+            for index, row in dfRemoved.iterrows():
+                a = a + 1
+            print("Qtde de Instancias retiradas: ", a)
         classificator.fit(xtr, ytr)
         predicts = classificator.predict(xvl)
         precision, recall, fscore, support = score(yvl, predicts)
@@ -285,11 +294,11 @@ def kFoldClassification(df,foldNumber,classificator,X,y,genderHeuristica):
         print('precision: {}'.format(precision))
         print('fscore:    {}'.format(fscore))
         print("########################")
-        if(genderHeuristica):
+        if(genderHeuristicaTest):
             k = 0
-            for text in dfTest.text:
-                gender = featureManager.getGenderStanza(text, realGender=0)
-                if (gender is not None):
+            for index, row in dfTest.iterrows():
+                gender = row.predictedGender
+                if not math.isnan(gender):
                     predicts[k] = gender
                 k = k + 1
             precision, recall, fscore, support = score(yvl, predicts)
@@ -313,7 +322,7 @@ def kFoldClassification(df,foldNumber,classificator,X,y,genderHeuristica):
             valuesArray.append(value[axis])
         print("Fscore Class: ",axis)
         print(np.mean(valuesArray))
-    if(genderHeuristica):
+    if(genderHeuristicaTest):
         print("#######################################")
         print("#### RESULTADO FINAL POS HEURISTICA####")
         axisCount = len(totalPrecisionHeuristic[0])

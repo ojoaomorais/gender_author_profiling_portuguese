@@ -143,26 +143,32 @@ if sys.argv[1] == "help":
     print("-------3 - B5-Corpus idade ------")
     print("-------4 - CROSS DOMAIN ------")
     print("Quarto Arg:")
-    print("Utilizar Heurística de genero: SIM|NAO")
+    print("Utilizar Heurística de genero na etapa de treinamento: SIM|NAO")
+    print("Quinto Arg:")
+    print("Utilizar Heurística de genero na etapa de teste: SIM|NAO")
     quit()
 
-chooseDataSet, predictGenders, chooseClassification,chooseHeuristica = sys.argv[1], sys.argv[2], sys.argv[3], sys.argv[4]
+chooseDataSet, predictGenders, chooseClassification,chooseHeuristicaTrain,chooseHeuristicaTest = sys.argv[1], sys.argv[2], sys.argv[3], sys.argv[4], sys.argv[5]
 
-choosedDataSet = chooseDataSet
+heuristica = False
+if chooseHeuristicaTrain == "SIM" or chooseHeuristicaTest == "SIM":
+    heuristica = True
+else:
+    heuristica = False
 if chooseDataSet == "1":
-    data = m.getData()
+    data = m.getData(heuristica)
 elif chooseDataSet == "2":
-    data = m.getReviewData()
+    data = m.getReviewData(heuristica)
 elif chooseDataSet == "3":
-    data = m.getBlogsetData()
+    data = m.getBlogsetData(heuristica)
 elif chooseDataSet == "4":
-    data = m.getStilingueData()
+    data = m.getStilingueData(heuristica)
 elif chooseDataSet == "5":
-    data = m.getAllPan()
+    data = m.getAllPan(heuristica)
 elif chooseDataSet == "6":
-    data = m.getESic()
+    data = m.getESic(heuristica)
 elif chooseDataSet == "7":
-    data = m.getBrMoral()
+    data = m.getBrMoral(heuristica)
 else:
     input("Opção inválida, pressione qualquer tecla para finalizar")
 
@@ -210,30 +216,31 @@ if predictGenders == "SIM":
     genderManager.printPredictedGenderScores(originalDF)
     quit()
 
-genderHeuristic = False
+heuristicaTrain = False
+heuristicaTest = False
 if chooseClassification != 3:
-    if chooseHeuristica == "SIM":
-        genderHeuristic = True
-    else:
-        genderHeuristic = False
+    if chooseHeuristicaTrain == "SIM":
+        heuristicaTrain = True
+    if chooseHeuristicaTest == "SIM":
+        heuristicaTest = True
 
 if chooseClassification == "1":
     ###### FECHADO!!!!!! #######
-    genderManager.b5CorpusPrediction(predictAttribute=originalDF.gender,dataFrame=originalDF,genderHeuristica=genderHeuristic)
+    genderManager.b5CorpusPrediction(dataFrame=originalDF,heuristicaTrain=heuristicaTrain ,heuristicaTest=heuristicaTest)
 elif chooseClassification == "2":
     ###### FECHADO!!!!!! #######
-    genderManager.panCorpusPrediction(originalDF,genderHeuristic)
+    genderManager.panCorpusPrediction(originalDF,heuristicaTrain= heuristicaTrain,heuristicaTest=heuristicaTest)
 elif chooseClassification == "3":
     originalDF = originalDF.dropna()
     originalDF = originalDF.astype({"idade": int})
     originalDF = originalDF.reset_index(drop=True)
-    genderManager.b5CorpusPrediction(predictAttribute=originalDF.idade,dataFrame=originalDF,genderHeuristica=False)
-elif chooseDataSet == "4":
-    if choosedDataSet == "3": # Blogset BR
-        genderManager.crossDomainPrediction(originalDF,w=600,s="pre",x=600,filter=False,it=200,layers=(300),f="relu",alpha=1e-05,corpusName="blog",corpusThreshold=0.77,genderHeuristica=genderHeuristic)
-    elif choosedDataSet == "6": # E-Gov
-        genderManager.crossDomainPrediction(originalDF,w=1000,s="pre",x=1000,filter=True,it=200,layers=(500),f="relu",alpha=1e-05,corpusName="e-gov",corpusThreshold=0.78,genderHeuristica=genderHeuristic)
+    genderManager.b5CorpusPrediction(dataFrame=originalDF,heuristicaTrain=False,heuristicaTest=False)
+elif chooseClassification == "4":
+    if chooseDataSet == "3": # Blogset BR
+        genderManager.crossDomainPrediction(originalDF,w=600,s="pre",x=600,filter=False,it=200,layers=(300),f="relu",alpha=1e-05,corpusName="blog",corpusThreshold=0.772,genderHeuristica=heuristicaTest)
+    elif chooseDataSet == "6": # E-Gov
+        genderManager.crossDomainPrediction(originalDF,w=1000,s="pre",x=1000,filter=True,it=200,layers=(500),f="relu",alpha=1e-05,corpusName="e-gov",corpusThreshold=0.780,genderHeuristica=heuristicaTest)
     else: # Opinion
-        genderManager.crossDomainPrediction(originalDF,w=100,s="self",x=80,filter=True,it=250,layers=(25,25,25),f="tanh",alpha=1e-07,corpusName="opinion",corpusThreshold=0.74,genderHeuristica=genderHeuristic)
+        genderManager.crossDomainPrediction(originalDF,w=100,s="self",x=80,filter=True,it=250,layers=(25,25,25),f="tanh",alpha=1e-07,corpusName="opinion",corpusThreshold=0.745,genderHeuristica=heuristicaTest)
 
 

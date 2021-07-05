@@ -27,7 +27,7 @@ panFolderTraining = "pan17-training"
 eSicFolder = "e-sic.csv"
 brMoralFolder = "brMoral.csv"
 parsedBlogsetFolder = "parsedBlogset2.csv"
-def getData():
+def getData(heuristica):
     femaleCount = 0
     maleCount = 0
     with open(csvFolder, 'r',encoding="iso8859") as file:
@@ -58,15 +58,17 @@ def getData():
             elif a >= 28 and a <= 61:
                 idade = int(2)
                 idade2 += 1
+            gender = None
             if result[0][genderRow] == "male":
                 gender = 0
                 maleCount += 1
-            else:
+            elif result[0][genderRow] == "female":
                 femaleCount += 1
                 gender = 1
-            text = fileManager.getText(folder + filename, encoding="iso8859")
-            struct = getFileStruct(idade, gender, text,id=personId)
-            data[int(personId)] = struct
+            if gender is not None:
+                text = fileManager.getText(folder + filename, encoding="iso8859")
+                struct = getFileStruct(heuristica,idade, gender, text,id=personId)
+                data[int(personId)] = struct
         print("Idade 0 :",idade0)
         print("Idade 1 :", idade1)
         print("Idade 2 :", idade2)
@@ -74,7 +76,7 @@ def getData():
         print("Numero Males:", maleCount)
         return data
 
-def getReviewData():
+def getReviewData(heuristica):
     with open(csvReviewFolder, 'r',encoding="utf-8") as file:
         csvFile = list(csv.reader(file,delimiter=";"))
         row_count = sum(1 for row in csvFile)
@@ -113,13 +115,13 @@ def getReviewData():
                     gender = 1
                     femaleGender += 1
                 text = values[10]
-                data[i] = getFileStruct(idade,gender,text,id=values[1])
+                data[i] = getFileStruct(heuristica,idade,gender,text,id=values[1])
                 i = i + 1
     print("Quantidade Masc",maleGender)
     print("Quantidade Fem",femaleGender)
     return data
 
-def getStilingueData():
+def getStilingueData(heuristica):
     with open(csvStilingueFolder, 'r',encoding="utf-8") as file:
         csvFile = list(csv.reader(file,delimiter=","))
         row_count = sum(1 for row in csvFile)
@@ -144,23 +146,22 @@ def getStilingueData():
                 else:
                     gender = 1
                 text = values[11]
-                data[i] = getFileStruct(0,gender,text,id=values[12])
+                data[i] = getFileStruct(heuristica,0,gender,text,id=values[12])
                 i = i + 1
     return data
 
-def getAllPan():
-    test = getPan(panFolderTest,False)
-    training = getPan(panFolderTraining,False)
+def getAllPan(heuristica):
+    test = getPan(heuristica,panFolderTest,False)
+    training = getPan(heuristica,panFolderTraining,False)
     d = test.copy()
     d.update(training)
     return d
 
-def getPan(path,onlyBrazil):
+def getPan(heuristica,path,onlyBrazil):
     data = {}
     maleCount = 0
     femaleCount = 0
-    print("Lendo arquivos...")
-    for folder in tqdm(os.listdir(path)):
+    for folder in os.listdir(path):
         if not folder.endswith(".DS_Store") and (folder == "pt"):
             folderFiles = path + "/" + folder
             truth = folderFiles + "/truth.txt"
@@ -168,7 +169,8 @@ def getPan(path,onlyBrazil):
                 fileId = ""
                 fileIds = [line.rstrip() for line in file]
                 files = os.listdir(folderFiles)
-                for filename in files:
+                print("Lendo arquivos...")
+                for filename in tqdm(files):
                     gender = 666
                     genderPattern = [fid for fid in fileIds if fid.startswith(filename.partition(".")[0])]
                     if filename.endswith("xml") and len(genderPattern) > 0:
@@ -198,7 +200,7 @@ def getPan(path,onlyBrazil):
                             else:
                                 gender = 1
                                 femaleCount +=1
-                        struct = getFileStruct(666, gender, text, id=fileId)
+                        struct = getFileStruct(heuristica,666, gender, text, id=fileId)
                         data[fileId] = struct
     print("Quantidade Masc", maleCount)
     print("Quantidade Fem", femaleCount)
@@ -243,7 +245,7 @@ def generateBlogsetCSV():
             twiDF = pd.DataFrame(twiData, columns=["user_id", 'gender', 'text'])
             twiDF.to_csv("parsedBlogset2.csv", sep='\t', encoding='utf-8')
 
-def getBlogsetData():
+def getBlogsetData(heuristica):
     with open(parsedBlogsetFolder, 'r', encoding="utf-8") as file:
         dataCsvFile = list(csv.reader(file, delimiter="\t"))
         data = {}
@@ -264,15 +266,17 @@ def getBlogsetData():
                     gender = 1
                     femaleCount += 1
                 text = values[3]
-                data[i] = getFileStruct(0, gender,text, id=id)
+                data[i] = getFileStruct(heuristica,0, gender,text, id=id)
                 i = i + 1
     print("Qtde encontrada:", qtde)
     print("Quantidade Masc", maleCount)
     print("Quantidade Fem", femaleCount)
     return data
 
-def getFileStruct(idade,gender,text,id):
-    predictGender = featureManager.getGenderStanza(text,gender)
+def getFileStruct(heuristica,idade,gender,text,id):
+    predictGender = None
+    if(heuristica):
+        predictGender = featureManager.getGenderStanza(text,gender)
     #emojiFrequency = featureManager.getEmojiFrequency(text)
     #laughFrequency = featureManager.getLaughFrequency(text)
     #slangFrequency = featureManager.getSlangFrequency(text)
@@ -286,7 +290,7 @@ def getFileStruct(idade,gender,text,id):
                                          emojiFrequency=0
                                          )
 
-def getESic():
+def getESic(heuristica):
     with open(eSicFolder, 'r',encoding="ISO-8859-1") as file:
         csvFile = list(csv.reader(file,delimiter=";"))
         row_count = sum(1 for row in csvFile)
@@ -313,13 +317,13 @@ def getESic():
                     text = text.lower()
                     regex = re.compile('[^A-Za-zéêíîôóõáàâãúûçÉÊÍÎÔÓÕÁÀÂÃÚÛÇ]+')
                     text = re.sub(regex, ' ', text)
-                    data[i] = getFileStruct(idade,gender,text,id=values[1])
+                    data[i] = getFileStruct(heuristica,idade,gender,text,id=values[1])
                 i = i + 1
     print("Quantidade Masc",maleGender)
     print("Quantidade Fem",femaleGender)
     return data
 
-def getBrMoral():
+def getBrMoral(heuristica):
     with open(brMoralFolder, 'r',encoding="ISO-8859-1") as file:
         csvFile = list(csv.reader(file,delimiter=";"))
         row_count = sum(1 for row in csvFile)
@@ -346,7 +350,7 @@ def getBrMoral():
                     femaleGender += 1
                 for k in range(1,10):
                     text = text + values[k] + "."
-                data[i] = getFileStruct(idade,gender,text,id=values[0])
+                data[i] = getFileStruct(heuristica,idade,gender,text,id=values[0])
             i = i + 1
     print("Quantidade Masc",maleGender)
     print("Quantidade Fem",femaleGender)
