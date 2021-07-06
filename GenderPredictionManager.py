@@ -169,7 +169,7 @@ def read_input(input_file):
         # do some pre-processing and return a list of words for each review text
         yield gensim.utils.simple_preprocess(line)
 
-def crossDomainPrediction(dataFrame,w,s,x,filter,it,layers,f,alpha,corpusName,corpusThreshold,genderHeuristica):
+def crossDomainPrediction(dataFrame,w,s,x,filter,it,layers,f,alpha,corpusName,corpusThreshold,genderHeuristicaTrain,genderHeuristicaTest):
         model = None
         X_train = None
         X_test = None
@@ -209,6 +209,20 @@ def crossDomainPrediction(dataFrame,w,s,x,filter,it,layers,f,alpha,corpusName,co
         tfidfVec = TfidfEmbeddingVectorizer(model=model,w=w)
         X_train = X_train.fillna(' ')
         X_test = X_test.fillna(' ')
+        if genderHeuristicaTrain:
+            newIndexes = []
+            removed = 0
+            indexToRemove = dataFrame[dataFrame[['gender', 'predictedGender']].apply(tuple, axis=1).isin([(1, 0), (0, 1)])].index.tolist()
+            for index, row in X_train.iteritems():
+                ind = int(index)
+                if ind not in indexToRemove:
+                    newIndexes.append(ind)
+            print("Dataframe Antes de Retirar:")
+            print(len(X_train.index))
+            X_train = X_train[newIndexes]
+            y_train = y_train[newIndexes]
+            print("Dataframe Após etirar:")
+            print(len(X_train.index))
         X_train_vec = tfidfVec.fit_transform(X_train)
         mlp.fit(X_train_vec,y_train)
         X_test_vec = tfidfVec.transform(X_test)
@@ -231,7 +245,7 @@ def crossDomainPrediction(dataFrame,w,s,x,filter,it,layers,f,alpha,corpusName,co
         #        y_train.to_csv(ytrainName,index=True)
         #        X_test.to_csv(xtestName, index=True)
         #        y_test.to_csv(ytestName, index=True)
-        if genderHeuristica:
+        if genderHeuristicaTest:
             k = 0
             for index, row in X_test.iteritems():
                 ind = int(index)

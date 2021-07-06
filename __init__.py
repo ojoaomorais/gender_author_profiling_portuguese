@@ -218,11 +218,10 @@ if predictGenders == "SIM":
 
 heuristicaTrain = False
 heuristicaTest = False
-if chooseClassification != 3:
-    if chooseHeuristicaTrain == "SIM":
-        heuristicaTrain = True
-    if chooseHeuristicaTest == "SIM":
-        heuristicaTest = True
+if chooseHeuristicaTrain == "SIM":
+    heuristicaTrain = True
+if chooseHeuristicaTest == "SIM":
+    heuristicaTest = True
 
 if chooseClassification == "1":
     ###### FECHADO!!!!!! #######
@@ -237,10 +236,10 @@ elif chooseClassification == "3":
     genderManager.b5CorpusPrediction(dataFrame=originalDF,heuristicaTrain=False,heuristicaTest=False)
 elif chooseClassification == "4":
     if chooseDataSet == "3": # Blogset BR
-        genderManager.crossDomainPrediction(originalDF,w=600,s="pre",x=600,filter=False,it=200,layers=(300),f="relu",alpha=1e-05,corpusName="blog",corpusThreshold=0.772,genderHeuristica=heuristicaTest)
+        genderManager.crossDomainPrediction(originalDF,w=600,s="pre",x=600,filter=False,it=200,layers=(300),f="relu",alpha=1e-05,corpusName="blog",corpusThreshold=0.772,genderHeuristicaTrain=heuristicaTrain,genderHeuristicaTest=heuristicaTest)
     elif chooseDataSet == "6": # E-Gov
-        genderManager.crossDomainPrediction(originalDF,w=1000,s="pre",x=1000,filter=True,it=200,layers=(500),f="relu",alpha=1e-05,corpusName="e-gov",corpusThreshold=0.780,genderHeuristica=heuristicaTest)
+        genderManager.crossDomainPrediction(originalDF,w=1000,s="pre",x=1000,filter=True,it=200,layers=(500),f="relu",alpha=1e-05,corpusName="e-gov",corpusThreshold=0.780,genderHeuristicaTrain=heuristicaTrain,genderHeuristicaTest=heuristicaTest)
     else: # Opinion
-        genderManager.crossDomainPrediction(originalDF,w=100,s="self",x=80,filter=True,it=250,layers=(25,25,25),f="tanh",alpha=1e-07,corpusName="opinion",corpusThreshold=0.745,genderHeuristica=heuristicaTest)
+        genderManager.crossDomainPrediction(originalDF,w=100,s="self",x=80,filter=True,it=250,layers=(25,25,25),f="tanh",alpha=1e-07,corpusName="opinion",corpusThreshold=0.745,genderHeuristicaTrain=heuristicaTrain,genderHeuristicaTest=heuristicaTest)
 
 
