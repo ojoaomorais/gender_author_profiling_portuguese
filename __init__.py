@@ -7,6 +7,7 @@ import pandas as pd
 import nltk
 import GenderPredictionManager as genderManager
 import FeatureExtractManager as featureManager
+from pathlib import Path
 
 def classifierChain(dataFrame):
     from sklearn.model_selection import train_test_split, cross_val_score
@@ -149,62 +150,55 @@ if sys.argv[1] == "help":
 chooseDataSet, predictGenders, chooseClassification,chooseHeuristica = sys.argv[1], sys.argv[2], sys.argv[3], sys.argv[4]
 
 choosedDataSet = chooseDataSet
-if chooseDataSet == "1":
-    data = m.getData()
-elif chooseDataSet == "2":
-    data = m.getReviewData()
-elif chooseDataSet == "3":
-    data = m.getBlogsetData()
-elif chooseDataSet == "4":
-    data = m.getStilingueData()
-elif chooseDataSet == "5":
-    data = m.getAllPan()
-elif chooseDataSet == "6":
-    data = m.getESic()
-elif chooseDataSet == "7":
-    data = m.getBrMoral()
-else:
-    input("Opção inválida, pressione qualquer tecla para finalizar")
+corpusName = f'corpus-{choosedDataSet}'
 
+if (Path(corpusName).is_file() == False):
+    if chooseDataSet == "1":
+        data = m.getData()
+    elif chooseDataSet == "2":
+        data = m.getReviewData()
+    elif chooseDataSet == "3":
+        data = m.getBlogsetData()
+    elif chooseDataSet == "4":
+        data = m.getStilingueData()
+    elif chooseDataSet == "5":
+        data = m.getAllPan()
+    elif chooseDataSet == "6":
+        data = m.getESic()
+    elif chooseDataSet == "7":
+        data = m.getBrMoral()
+    else:
+        input("Opção inválida, pressione qualquer tecla para finalizar")
 
-
-id = []
-idade = []
-gunningIndex = []
-gender = []
-text = []
-predictedGender = []
-laughFrequency = []
-emojiFrequency = []
-slangFrequency = []
-for entry in data.keys():
-    #if data[entry].idade != "":
-    id.append(entry)
-    idade.append(data[entry].idade)
-    gender.append(data[entry].gender)
-    text.append(data[entry].text)
-    predictedGender.append(data[entry].predictedGender)
-    laughFrequency.append(data[entry].laughFrequency)
-    emojiFrequency.append(data[entry].emojiFrequency)
-    slangFrequency.append(data[entry].slangFrequency)
-
-data = {}
-data["id"] = id
-data["idade"] = idade
-data["gender"] = gender
-#data["laughFrequency"] = laughFrequency
-#data["emojiFrequency"] = emojiFrequency
-#data["slangFrequency"] = slangFrequency
-data["predictedGender"] = predictedGender
-data["text"] = text
-originalDF = pd.DataFrame(data, columns=["id",'idade', 'gender',
+    id = []
+    idade = []
+    gunningIndex = []
+    gender = []
+    text = []
+    predictedGender = []
+    laughFrequency = []
+    emojiFrequency = []
+    slangFrequency = []
+    for entry in data.keys():
+        id.append(entry)
+        idade.append(data[entry].idade)
+        gender.append(data[entry].gender)
+        text.append(data[entry].text)
+        predictedGender.append(data[entry].predictedGender)
+        laughFrequency.append(data[entry].laughFrequency)
+        emojiFrequency.append(data[entry].emojiFrequency)
+        slangFrequency.append(data[entry].slangFrequency)
+    data = {}
+    data["id"] = id
+    data["idade"] = idade
+    data["gender"] = gender
+    data["predictedGender"] = predictedGender
+    data["text"] = text
+    originalDF = pd.DataFrame(data, columns=["id",'idade', 'gender',
                                          "predictedGender","text"])
-
-
-#originalDF.to_csv("dataframeGunningIndex.csv",delimiter=";" ,encoding='utf-8', index=True)
-#print(originalDF.head())
-#ax = originalDF.plot(x="idade", y="gunningIndex")
-#ax.figure.savefig('demo-file.pdf')
+    originalDF.to_csv(corpusName, index=True)
+else:
+    originalDF = pd.read_csv(corpusName)
 
 if predictGenders == "SIM":
     genderManager.printPredictedGenderScores(originalDF)

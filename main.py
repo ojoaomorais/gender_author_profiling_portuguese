@@ -42,7 +42,7 @@ def getData():
         for filename in os.listdir(folder):
             personId = re.findall(numberRegex, filename)[0]
             idade = None
-            gender = ""
+            gender = None
             i = 0
             result = list(filter(lambda x: x[0] == personId, csvFile))
             a = 666
@@ -60,12 +60,13 @@ def getData():
             if result[0][genderRow] == "male":
                 gender = 0
                 maleCount += 1
-            else:
+            elif result[0][genderRow] == "female":
                 femaleCount += 1
                 gender = 1
-            text = fileManager.getText(folder + filename, encoding="iso8859")
-            struct = getFileStruct(idade, gender, text,id=personId)
-            data[int(personId)] = struct
+            if gender is not None:
+                text = fileManager.getText(folder + filename, encoding="iso8859")
+                struct = getFileStruct(idade, gender, text,id=personId)
+                data[int(personId)] = struct
         print("Idade 0 :",idade0)
         print("Idade 1 :", idade1)
         print("Idade 2 :", idade2)
@@ -266,7 +267,7 @@ def getBlogsetData():
     return data
 
 def getFileStruct(idade,gender,text,id):
-    #predictGender = featureManager.getGender(text,gender,id)
+    predictGender = featureManager.getGenderStanza(text,gender)
     #emojiFrequency = featureManager.getEmojiFrequency(text)
     #laughFrequency = featureManager.getLaughFrequency(text)
     #slangFrequency = featureManager.getSlangFrequency(text)
@@ -274,7 +275,7 @@ def getFileStruct(idade,gender,text,id):
     return FileDataStruct.FileDataStruct(text=text,
                                          idade= idade,
                                          gender= gender,
-                                         predictedGender=0,
+                                         predictedGender=predictGender,
                                          slangFrequency=0,
                                          laughFrequency=0,
                                          emojiFrequency=0
