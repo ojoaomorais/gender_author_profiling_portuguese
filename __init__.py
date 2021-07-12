@@ -222,7 +222,7 @@ elif chooseClassification == "3":
     originalDF = originalDF.astype({"idade": int})
     originalDF = originalDF.reset_index(drop=True)
     genderManager.b5CorpusPrediction(predictAttribute=originalDF.idade,dataFrame=originalDF,genderHeuristica=False)
-elif chooseDataSet == "4":
+elif chooseClassification == "4":
     if choosedDataSet == "3": # Blogset BR
         genderManager.crossDomainPrediction(originalDF,w=600,s="pre",x=600,filter=False,it=200,layers=(300),f="relu",alpha=1e-05,corpusName="blog",corpusThreshold=0.77,genderHeuristica=genderHeuristic)
     elif choosedDataSet == "6": # E-Gov
