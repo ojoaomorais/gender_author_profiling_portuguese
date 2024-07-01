@@ -92,16 +92,6 @@ def b5CorpusPrediction(predictAttribute,dataFrame,genderHeuristica):
     final_stopwords_list = stopwords.words('portuguese')
     tfidf = TfidfVectorizer(max_features=3000,stop_words=final_stopwords_list)
     d = tfidf.fit_transform(dataFrame.text)
-
-    #pipeline = Pipeline([('tfidf', tfidf), ('clf', clf)])
-    #parameters = [{
-    #    "clf__C":[5.0]
-    #}]
-    #grid_search = GridSearchCV(pipeline, parameters, scoring="f1", cv=10, verbose=10, n_jobs=-1)
-    #grid_search.fit(dataFrame.text, dataFrame.gender)
-    #print("Best params:")
-    #print(grid_search.best_params_)
-    #print("Best parameter (CV score=%0.3f):" % grid_search.best_score_)
     kFoldClassification(dataFrame,10, logistic,X=d,y=dataFrame.gender,genderHeuristica=genderHeuristica)
 
 def panCorpusPrediction(dataFrame,idadeHeuristica):
@@ -110,26 +100,8 @@ def panCorpusPrediction(dataFrame,idadeHeuristica):
     word_tfidf = TfidfVectorizer(analyzer='word', ngram_range=(1, 2),sublinear_tf=True,min_df=2,use_idf=False)
     tfidf = FeatureUnion([('char', char_tfidf), ('word', word_tfidf)])
     d = tfidf.fit_transform(dataFrame.text)
-
-    #pipeline = Pipeline([('tfidf', tfidf), ('clf', LinearSVC(C=0.5))])
-    #grid_search = GridSearchCV(pipeline,parameters,scoring="accuracy",cv=5,verbose=10,n_jobs=-1)
-    #grid_search.fit(dataFrame.text,dataFrame.gender)
-    #print("Best params:")
-    #print(grid_search.best_params_)
-    #print("Best parameter (CV score=%0.3f):" % grid_search.best_score_)
     predictedGender = []
-    # if (idadeHeuristica):
-    #     print("Rodando heurística...")
-    #     for index, row in tqdm(dataFrame.iterrows()):
-    #         y1 = row.gender
-    #         gender = featureManager.getGenderStanza(row.text, y1)
-    #         if gender is None:
-    #             predictedGender.append(None)
-    #         else:
-    #             predictedGender.append(gender)
     svc = LinearSVC(C=0.5)
-    #if (idadeHeuristica):
-    #    data["predictedGender"] = predictedGender
     kFoldClassification(dataFrame,5,svc,X=d,y=dataFrame.gender,genderHeuristica=idadeHeuristica)
 
 from gensim.models import KeyedVectors
@@ -263,21 +235,6 @@ def kFoldClassification(df,foldNumber,classificator,X,y,genderHeuristica):
         dfTest = df.loc[test_index]
         xtr, xvl = X[train_index], X[test_index]
         ytr, yvl = y[train_index], y[test_index]
-        # if (genderHeuristica):
-        #     for index, row in dfTrain.iterrows():
-        #         ind = dfTrain[dfTrain.text == row.text].index[0]
-        #         y1 = row.gender
-        #         if (math.isnan(row.predictedGender) == False) and (row.predictedGender != y1):
-        #             print("================ ROW ===================")
-        #             print(row)
-        #             print("=================YTR====================")
-        #             print(ytr[ind])
-        #             print("=================INDEX==================")
-        #             print(ind)
-        #             print("================XTR=====================")
-        #             print(xtr)
-        #             xtr = xtr.drop(ind)
-        #             ytr = ytr.drop(ind)
         classificator.fit(xtr, ytr)
         predicts = classificator.predict(xvl)
         k = 0

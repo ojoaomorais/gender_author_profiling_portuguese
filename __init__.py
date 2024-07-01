@@ -1,233 +1,130 @@
 import sys
-
-from tqdm import tqdm
-from sklearn.multioutput import ClassifierChain
+import argparse
 import main as m
 import pandas as pd
-import nltk
 import GenderPredictionManager as genderManager
 import FeatureExtractManager as featureManager
 from pathlib import Path
 
-def classifierChain(dataFrame):
-    from sklearn.model_selection import train_test_split, cross_val_score
-    from sklearn.svm import SVC
-    X = originalDF[['laughFrequency', "emojiFrequency", "slangFrequency", "predictedGender"]]
-    Y = originalDF[['idade', 'gender']]
-    # Binarizando coluna idade
-    Y = pd.concat([originalDF.gender, pd.get_dummies(originalDF.idade)], axis=1)
-    X_train, X_test, Y_train, Y_test = train_test_split(X, Y, test_size=.2,
-                                                        random_state=0)
 
-    base_lr = SVC()
-    chain = ClassifierChain(base_lr, order=[0, 1, 2, 3], random_state=0)
+if __name__ == '__main__':  
+    parser = argparse.ArgumentParser(description='Args for each of the models')
+    parser.add_argument('-m',
+                        help="""The model (1-B5-Corpus, 2-B2W-Reviews,
+                        3-Blogset-BR, 4-PAN, 5-ESIC, 6-BRMORAL)
+                        """,
+                        type=int,
+                        dest="model")
+    parser.add_argument('-c',
+                        help='Uses cascade model',
+                        type=bool,
+                        dest="cascade")
 
-    from sklearn import metrics
-    scores = cross_val_score(chain, X, Y, cv=5, scoring='f1_macro')
-    print(scores)
+    args = parser.parse_args()
 
+    main(args)
 
+def main(params):
+    model = params.model
+    corpusName = f'corpus-{model}'
 
-# import tweepy
-# import json
-# tweets = []
-# genders = []
-# userId = []
-# auth = tweepy.OAuthHandler("pmT2pVdObh5ThqWviO0ivXqPv", "mUfZbzU1ZNtCYHEjlCj8Yihu28xYI80MABNpbz5dprVGCPxskV")
-# auth.set_access_token("3026375668-LCgRvotj9nVTl82nvWGX0utJrz6IlBzHx3xuwUY", "gQX2c4F6QpZM3NWMpCqJWgnKQNZFtQoM7inHgtQFHBbNP")
-# api = tweepy.API(auth, wait_on_rate_limit=True)
-# with open("twisty/TwiSty-PT.json", 'r',encoding="utf-8") as file:
-#     y = json.load(file)
-#     for d in  tqdm(y):
-#         #for twi in y[d]["other_tweet_ids"]:
-#         #    try:
-#         #        tweet = api.get_status(twi)
-#         #        print(tweet.text)
-#         #        tweets.append(twi)
-#         #        genders.append(y[d]["gender"])
-#         #        userId.append(y[d]["user_id"])
-#         #    except tweepy.TweepError:
-#         #        print("Error")
-#         for twi in tqdm(y[d]["confirmed_tweet_ids"]):
-#             try:
-#                 tweet = api.get_status(twi)
-#                 tweets.append(twi)
-#                 genders.append(y[d]["gender"])
-#                 userId.append(y[d]["user_id"])
-#             except tweepy.TweepError as e:
-#                 pass
-#     twiData = {}
-#     twiData["user_id"] = userId
-#     twiData["gender"] = genders
-#     twiData["text"] = tweets
-#     twiDF = pd.DataFrame(twiData, columns=["user_id", 'gender', 'text'])
-#
-#     twiDF.to_csv("twisty.csv", sep='\t', encoding='utf-8')
+    if (Path(corpusName).is_file() == False):
+        if model == 1:
+            data = m.getData()
+        elif model == 2:
+            data = m.getReviewData()
+        elif model == 3:
+            data = m.getBlogsetData()
+        elif model == 4:
+            data = m.getAllPan()
+        elif model == 5:
+            data = m.getESic()
+        elif model == 6:
+            data = m.getBrMoral()
+        else:
+            input("Invalid option. Please see help with -h argument")
 
-# average = input("Média de palavras por documento")
-#
-# if average == "SIM":
-#     datasets = []
-#     datasetsName = ['## 1 - b5-corpus','## 2 - B2W reviews','## 3 - Blogset BR','## 5 - PAN','## 6 - E-Sic','## 7 - Br Moral']
-#     datasets.append(m.getData())
-#     datasets.append(m.getReviewData())
-#     datasets.append(m.getBlogsetData())
-#     datasets.append(m.getAllPan())
-#     datasets.append(m.getESic())
-#     datasets.append(m.getBrMoral())
-#     i = 0
-#     for dataset in datasets:
-#         print("====================================")
-#         id = []
-#         idade = []
-#         gunningIndex = []
-#         gender = []
-#         text = []
-#         predictedGender = []
-#         laughFrequency = []
-#         emojiFrequency = []
-#         slangFrequency = []
-#         for entry in dataset.keys():
-#             # if data[entry].idade != "":
-#             id.append(entry)
-#             idade.append(dataset[entry].idade)
-#             gender.append(dataset[entry].gender)
-#             text.append(dataset[entry].text)
-#             predictedGender.append(dataset[entry].predictedGender)
-#             laughFrequency.append(dataset[entry].laughFrequency)
-#             emojiFrequency.append(dataset[entry].emojiFrequency)
-#             slangFrequency.append(dataset[entry].slangFrequency)
-#
-#         data = {}
-#         data["id"] = id
-#         data["idade"] = idade
-#         data["gender"] = gender
-#         # data["laughFrequency"] = laughFrequency
-#         # data["emojiFrequency"] = emojiFrequency
-#         # data["slangFrequency"] = slangFrequency
-#         data["predictedGender"] = predictedGender
-#         data["text"] = text
-#         originalDF = pd.DataFrame(data, columns=["id", 'idade', 'gender',
-#                                                  "predictedGender", "text"])
-#
-#         print(datasetsName[i])
-#         print(originalDF.shape)
-#         originalDF['Characters'] = originalDF.text.str.len()
-#         originalDF['Words'] = originalDF.text.str.split().str.len()
-#         print("Caracteres")
-#         print(originalDF.Characters.sum())
-#         print("Palavras")
-#         print(originalDF.Words.sum())
-#         print("Médias")
-#         print(originalDF['Words'].describe())
-#         print("Média de caracteres")
-#         print(originalDF['Characters'].describe())
-#         print("====================================")
-#         i = i + 1
-
-if sys.argv[1] == "help":
-    print("Primeiro Arg: ")
-    print("-------1 - B5-Corpus --------")
-    print("-------2 - B2W- Reviews ------")
-    print("-------3 - Blogset-BR ------")
-    print("-------4 - Stilingue (Deprecated) ------")
-    print("-------5 - PAN ------")
-    print("-------6 - ESIC ------")
-    print("-------7 - BRMORAL ------")
-    print("==========================================")
-    print("Segundo Arg:")
-    print("Predizer apenas gênero: SIM|NAO")
-    print("Terceiro Arg:")
-    print("Classificador:")
-    print("-------1 - B5-Corpus -------")
-    print("-------2 - PAN ------")
-    print("-------3 - B5-Corpus idade ------")
-    print("-------4 - CROSS DOMAIN ------")
-    print("Quarto Arg:")
-    print("Utilizar Heurística de genero: SIM|NAO")
-    quit()
-
-chooseDataSet, predictGenders, chooseClassification,chooseHeuristica = sys.argv[1], sys.argv[2], sys.argv[3], sys.argv[4]
-
-choosedDataSet = chooseDataSet
-corpusName = f'corpus-{choosedDataSet}'
-
-if (Path(corpusName).is_file() == False):
-    if chooseDataSet == "1":
-        data = m.getData()
-    elif chooseDataSet == "2":
-        data = m.getReviewData()
-    elif chooseDataSet == "3":
-        data = m.getBlogsetData()
-    elif chooseDataSet == "4":
-        data = m.getStilingueData()
-    elif chooseDataSet == "5":
-        data = m.getAllPan()
-    elif chooseDataSet == "6":
-        data = m.getESic()
-    elif chooseDataSet == "7":
-        data = m.getBrMoral()
+        id = []
+        gender = []
+        text = []
+        predictedGender = []
+        for entry in data.keys():
+            id.append(entry)
+            gender.append(data[entry].gender)
+            text.append(data[entry].text)
+            predictedGender.append(data[entry].predictedGender)
+        data = {}
+        data["id"] = id
+        data["gender"] = gender
+        data["predictedGender"] = predictedGender
+        data["text"] = text
+        originalDF = pd.DataFrame(data, columns=["id", 'gender',
+                                            "predictedGender","text"])
+        originalDF.to_csv(corpusName, index=True)
     else:
-        input("Opção inválida, pressione qualquer tecla para finalizar")
+        originalDF = pd.read_csv(corpusName)
 
-    id = []
-    idade = []
-    gunningIndex = []
-    gender = []
-    text = []
-    predictedGender = []
-    laughFrequency = []
-    emojiFrequency = []
-    slangFrequency = []
-    for entry in data.keys():
-        id.append(entry)
-        idade.append(data[entry].idade)
-        gender.append(data[entry].gender)
-        text.append(data[entry].text)
-        predictedGender.append(data[entry].predictedGender)
-        laughFrequency.append(data[entry].laughFrequency)
-        emojiFrequency.append(data[entry].emojiFrequency)
-        slangFrequency.append(data[entry].slangFrequency)
-    data = {}
-    data["id"] = id
-    data["idade"] = idade
-    data["gender"] = gender
-    data["predictedGender"] = predictedGender
-    data["text"] = text
-    originalDF = pd.DataFrame(data, columns=["id",'idade', 'gender',
-                                         "predictedGender","text"])
-    originalDF.to_csv(corpusName, index=True)
-else:
-    originalDF = pd.read_csv(corpusName)
+    if predictGenders == "SIM":
+        genderManager.printPredictedGenderScores(originalDF)
+        quit()
 
-if predictGenders == "SIM":
-    genderManager.printPredictedGenderScores(originalDF)
-    quit()
+    genderHeuristic = False
+    if chooseClassification != 3:
+        if chooseHeuristica == "SIM":
+            genderHeuristic = True
+        else:
+            genderHeuristic = False
 
-genderHeuristic = False
-if chooseClassification != 3:
-    if chooseHeuristica == "SIM":
-        genderHeuristic = True
-    else:
-        genderHeuristic = False
-
-if chooseClassification == "1":
-    ###### FECHADO!!!!!! #######
-    genderManager.b5CorpusPrediction(predictAttribute=originalDF.gender,dataFrame=originalDF,genderHeuristica=genderHeuristic)
-elif chooseClassification == "2":
-    ###### FECHADO!!!!!! #######
-    genderManager.panCorpusPrediction(originalDF,genderHeuristic)
-elif chooseClassification == "3":
-    originalDF = originalDF.dropna()
-    originalDF = originalDF.astype({"idade": int})
-    originalDF = originalDF.reset_index(drop=True)
-    genderManager.b5CorpusPrediction(predictAttribute=originalDF.idade,dataFrame=originalDF,genderHeuristica=False)
-elif chooseClassification == "4":
-    if choosedDataSet == "3": # Blogset BR
-        genderManager.crossDomainPrediction(originalDF,w=600,s="pre",x=600,filter=False,it=200,layers=(300),f="relu",alpha=1e-05,corpusName="blog",corpusThreshold=0.77,genderHeuristica=genderHeuristic)
-    elif choosedDataSet == "6": # E-Gov
-        genderManager.crossDomainPrediction(originalDF,w=1000,s="pre",x=1000,filter=True,it=200,layers=(500),f="relu",alpha=1e-05,corpusName="e-gov",corpusThreshold=0.78,genderHeuristica=genderHeuristic)
-    else: # Opinion
-        genderManager.crossDomainPrediction(originalDF,w=100,s="self",x=80,filter=True,it=250,layers=(25,25,25),f="tanh",alpha=1e-07,corpusName="opinion",corpusThreshold=0.74,genderHeuristica=genderHeuristic)
+    if chooseClassification == "1":
+        genderManager.b5CorpusPrediction(predictAttribute=originalDF.gender,
+                                        dataFrame=originalDF,
+                                        genderHeuristica=genderHeuristic)
+    elif chooseClassification == "2":
+        genderManager.panCorpusPrediction(originalDF,genderHeuristic)
+    elif chooseClassification == "3":
+        originalDF = originalDF.dropna()
+        originalDF = originalDF.astype({"idade": int})
+        originalDF = originalDF.reset_index(drop=True)
+        genderManager.b5CorpusPrediction(predictAttribute=originalDF.idade,
+                                        dataFrame=originalDF,
+                                        genderHeuristica=False)
+    elif chooseClassification == "4":
+        if choosedDataSet == "3": # Blogset BR
+            genderManager.crossDomainPrediction(originalDF,w=600,
+                                                s="pre",x=600,
+                                                filter=False,
+                                                it=200,
+                                                layers=(300),
+                                                f="relu",
+                                                alpha=1e-05,
+                                                corpusName="blog",
+                                                corpusThreshold=0.77,
+                                                genderHeuristica=genderHeuristic)
+        elif choosedDataSet == "6": # E-Gov
+            genderManager.crossDomainPrediction(originalDF,
+                                                w=1000,
+                                                s="pre",
+                                                x=1000,
+                                                filter=True,
+                                                it=200,
+                                                layers=(500),
+                                                f="relu",
+                                                alpha=1e-05,
+                                                corpusName="e-gov",
+                                                corpusThreshold=0.78,
+                                                genderHeuristica=genderHeuristic)
+        else: # Opinion
+            genderManager.crossDomainPrediction(originalDF,
+                                                w=100,
+                                                s="self",
+                                                x=80,
+                                                filter=True,
+                                                it=250,
+                                                layers=(25,25,25),
+                                                f="tanh",
+                                                alpha=1e-07,
+                                                corpusName="opinion",
+                                                corpusThreshold=0.74,
+                                                genderHeuristica=genderHeuristic)
 
 
